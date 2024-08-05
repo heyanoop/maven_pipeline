@@ -40,7 +40,6 @@ pipeline {
             steps {
                 withSonarQubeEnv("sonar-server") {
                     sh ''' $SCANNER_HOME/bin/sonar-scanner \
-                    -D sonar.host.url=http://localhost:9000 \
                     -D sonar.projectName=cicd \
                     -D sonar.java.binaries=. \
                     -D sonar.projectKey=cicd '''
