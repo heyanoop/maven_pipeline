@@ -35,6 +35,17 @@ pipeline {
                 }
             }
         }
+        
+        stage('Sonar') {
+            steps {
+                withSonarQubeEnv("sonar-server") {
+                    sh ''' $SCANNER_HOME/bin/sonar-scanner \
+                    -D sonar.projectName=cicd \
+                    -D sonar.java.binaries=. \
+                    -D sonar.projectKey=cicd '''
+                }
+            }
+        }
         stage('Push to Docker Hub') {
             steps {
                 script {
