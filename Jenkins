@@ -13,12 +13,12 @@ pipeline {
     stages {
         stage('Git checkout') {
             steps {
-                git branch: 'master',changelog: false, poll: false, url: 'https://github.com/heyanoop/maven_pipeline.git'
+                git branch: 'master', changelog: false, poll: false, url: 'https://github.com/heyanoop/maven_pipeline.git'
             }
         }
-        stage('clean') {
+        stage('Clean and Install') {
             steps {
-                sh "mvn clean install -Dmaven.test.skip=true"
+                sh "mvn clean install"
             }
         }
         stage('Compile') {
@@ -26,16 +26,18 @@ pipeline {
                 sh "mvn compile"
             }
         }
-       
-        stage('Build') {
+        stage('Unit Tests') {
             steps {
                 script {
-                    // Build the Docker image
-                    sh "docker build -t ${DOCKER_IMAGE}:${DOCKER_TAG} ."
+                    try {
+                        sh "mvn test"
+                    } catch (Exception e) {
+                        echo "Unit tests failed, but continuing with the pipeline."
+                        currentBuild.result = 'UNSTABLE'
+                    }
                 }
             }
         }
-        
         stage('Sonar') {
             steps {
                 withSonarQubeEnv("sonar-server") {
@@ -46,22 +48,26 @@ pipeline {
                 }
             }
         }
+        stage('Build') {
+            steps {
+                script {
+                    sh "docker build -t ${DOCKER_IMAGE}:${DOCKER_TAG} ."
+                }
+            }
+        }
+        
         stage('Push to Docker Hub') {
             steps {
                 script {
-                    // Login to Docker Hub
                     sh "echo $DOCKER_CREDENTIALS_PSW | docker login -u $DOCKER_CREDENTIALS_USR --password-stdin"
                     sh "docker push ${DOCKER_IMAGE}:${DOCKER_TAG}"
-                    
                 }
             }
         }
     }
     post {
         always {
-            // Clean up
             sh "docker rmi ${DOCKER_IMAGE}:${DOCKER_TAG}"
-            // Logout from Docker Hub
             sh "docker logout"
         }
     }
