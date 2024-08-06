@@ -16,6 +16,11 @@ pipeline {
                 git branch: 'master', changelog: false, poll: false, url: 'https://github.com/heyanoop/maven_pipeline.git'
             }
         }
+        stage('Clean and Install') {
+            steps {
+                sh "mvn clean install -DskipTests"
+            }
+        }
         stage('Unit Tests') {
             steps {
                 sh "mvn test -DskipTests"
